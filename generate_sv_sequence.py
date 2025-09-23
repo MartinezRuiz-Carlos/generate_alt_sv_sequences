@@ -6,7 +6,7 @@ from warnings import warn
 import re
 import argparse
 from pathlib import Path
-import pandas as pd
+import csv
 
 # Functions to extract the sequence for structural variants of interest 
 def test_key(dict_test, key_test):
@@ -262,17 +262,27 @@ def main():
     # Load reference FASTA
     ref_fa = SeqIO.to_dict(SeqIO.parse(args.reference, 'fasta'))
     
-    sv_sequences = dict()
-    for record in vcf.fetch():
-        positions = extract_sv_startend(record, args.caller)
-        sv_sequence,ref_sequence,n_sequence = get_sv_sequence(positions, ref_fa, int(args.sequence_size))
-        this_record_dict = {record.id : {'chr':record.contig,'pos':record.pos,'caller':args.caller,'sv_seq':str(sv_sequence),'ref_seq':str(ref_sequence),'n_seq':str(n_sequence)}}
-        sv_sequences.update(this_record_dict)
-
     # Output
     out_filename = Path(args.out_dir, 'sv_sequences.csv')
-    out_df = pd.DataFrame.from_dict(sv_sequences, orient='index')
-    out_df.to_csv(out_filename, index = True, quoting = 3)
+
+    # Set header writer to True for the first iteration
+    write_header = True
+
+    with open(out_filename, mode="w", newline="") as f:
+        writer = None
+        for record in vcf.fetch():
+            positions = extract_sv_startend(record, args.caller)
+            sv_sequence,ref_sequence,n_sequence = get_sv_sequence(positions, ref_fa, int(args.sequence_size))
+            this_record_dict = {'sv_id':record.id,'chr':record.contig,'pos':record.pos,'caller':args.caller,'sv_seq':str(sv_sequence),'ref_seq':str(ref_sequence),'n_seq':str(n_sequence)}
+
+            # Initialise writer on the first iteration
+            if writer is None:  
+                writer = csv.DictWriter(f, fieldnames=this_record_dict.keys())
+            if write_header:
+                writer.writeheader()
+                write_header = False
+
+            writer.writerow(this_record_dict)
 
 if __name__ == "__main__":
         main()

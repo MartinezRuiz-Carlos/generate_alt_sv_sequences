@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=test_sv_sequence   # Job name
 #SBATCH --ntasks=1                    # Run six tasks
-#SBATCH --mem=32G                     # Job Memory
-#SBATCH --time=36:00:00               # Time limit hrs:min:sec
+#SBATCH --mem=200G                     # Job Memory
+#SBATCH --time=24:00:00               # Time limit hrs:min:sec
 #SBATCH --output=logs/sv_sequence_call_%j%t.log   # Standard output and error log
 
 SEQUENCE_SIZE=90000

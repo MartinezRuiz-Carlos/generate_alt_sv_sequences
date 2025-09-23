@@ -184,39 +184,45 @@ def get_sv_sequence(pos_dict, reference, sequence_size):
         # For deletions the padding is just half of the final sequence length (no extra sequence is present)
         padding_size = sequence_size // 2
         endseq = reference[chr_start][pos_end:(pos_end + padding_size)].seq
+        # Generate N reference sequence
+        deletion_size = pos_end - pos_start
+        endseq_n = Seq('N' * deletion_size) + reference[chr_start][pos_end:(pos_end + (padding_size - deletion_size))].seq
 
     elif pos_dict['svtype'] == 'DUP':
         # Skip if duplicate is larger than target sequence size
         if (pos_end - pos_start) > sequence_size:
             warn(f'Duplicate {chr_start}:{pos_start} is larger than target size of {sequence_size}, no sequence generated')
-            return '',''
+            return '','',''
         else:
             # Padding size is half of the total desired size minus double the variant size
             padding_size = (sequence_size - ((pos_end - pos_start) * 2)) // 2
             dup_seq = reference[chr_start][pos_start:pos_end].seq
             endseq = dup_seq + reference[chr_start][pos_start:(pos_end + padding_size)].seq
+            endseq_n = Seq('N' * (pos_end - pos_start)) + reference[chr_start][pos_start:(pos_end + padding_size)].seq
 
     elif pos_dict['svtype'] == 'INV':
         # Skip if inverted sequence is larger than target sequence size
         if (pos_end - pos_start) > sequence_size:
             warn(f'Inversion {chr_start}:{pos_start} is larger than target size of {sequence_size}, no sequence generated')
-            return '',''
+            return '','',''
         else:
             # Padding size in inversions is simply half of the total size minus size of the variant 
             padding_size = (sequence_size - (pos_end - pos_start)) // 2
             inverted_seq = reference[chr_start][pos_start:pos_end].seq[::-1]
             endseq = inverted_seq + reference[chr_start][pos_end:(pos_end + padding_size)].seq
+            endseq_n = Seq('N' * (pos_end - pos_start)) + reference[chr_start][pos_end:(pos_end + padding_size)].seq
 
     elif pos_dict['svtype'] == 'INS':
         # Skip if inserted sequence is larger than target sequence size
         inserted_seq=Seq(pos_dict['alt'][0])
         if  len(inserted_seq) > sequence_size:
             warn(f'Insertion {chr_start}:{pos_start} is larger than target size of {sequence_size}, no sequence generated')
-            return '',''
+            return '','',''
         else:
             # Padding size in insertions is half of the total size minus size of the inserted sequence
             padding_size = (sequence_size - len(inserted_seq)) // 2
             endseq = inserted_seq + reference[chr_start][pos_end:(pos_end + padding_size)].seq
+            endseq_n = Seq(len(inserted_seq) * 'N') + reference[chr_start][pos_end:(pos_end + padding_size)].seq
 
     elif pos_dict['svtype'] == 'BND':
         # NOTE, BNDs are treated very simplistically, simply extending either side of the breakpoints
@@ -224,19 +230,23 @@ def get_sv_sequence(pos_dict, reference, sequence_size):
         # Also NOTE, if the VCF contains both breakend mates, they will get a sequence in opposite directions (extended_seq-mate1:mate2-extended_seq and extended_seq-mate2:mate1-extended_seq), to avoid this behaviour, the VCF needs to be filtered beforehand
         padding_size = sequence_size // 2
         endseq = reference[chr_end][pos_end:(pos_end + sequence_size // 2)].seq
+        endseq_n = Seq((sequence_size // 2) * 'N')
 
     else:
         warn('The SVTYPE provided did not match any of DEL, DUP, INS, INV, INS nor BND, skipping')
-        return '',''
+        return '','',''
     
-    # Get reference sequence (ensure start position does not go below 0, by default no positions beyond the max size of the chr will be extracted, so no adjustment needed on the other end)
+    # Get SV sequence (ensure start position does not go below 0, by default no positions beyond the max size of the chr will be extracted, so no adjustment needed on the other end)
     startpos_padded = max((pos_start - padding_size), 0)
     sv_seq = reference[chr_start][startpos_padded:pos_start].seq + endseq
 
     # Ensure reference sequence is as long as the SV sequence
     ref_seq = get_ref_sequence(chr_start, pos_start, len(sv_seq), reference)
 
-    return sv_seq,ref_seq
+    # Get N reference
+    n_seq = reference[chr_start][startpos_padded:pos_start].seq + endseq_n
+
+    return sv_seq,ref_seq,n_seq
 
 def main():
     parser = argparse.ArgumentParser(description='Template Python3 Script')
@@ -248,11 +258,15 @@ def main():
 
     args = parser.parse_args()
 
+    vcf = pysam.VariantFile(args.input_vcf, 'r')
+    # Load reference FASTA
+    ref_fa = SeqIO.to_dict(SeqIO.parse(args.reference, 'fasta'))
+    
     sv_sequences = dict()
     for record in vcf.fetch():
         positions = extract_sv_startend(record, args.caller)
-        sv_sequence,ref_sequence = get_sv_sequence(positions, ref_fa, int(args.sequence_size))
-        this_record_dict = {record.id : {'chr':record.contig,'pos':record.pos,'caller':args.caller,'sv_seq':str(sv_sequence),'ref_seq':str(ref_sequence)}}
+        sv_sequence,ref_sequence,n_sequence = get_sv_sequence(positions, ref_fa, int(args.sequence_size))
+        this_record_dict = {record.id : {'chr':record.contig,'pos':record.pos,'caller':args.caller,'sv_seq':str(sv_sequence),'ref_seq':str(ref_sequence),'n_seq':str(n_sequence)}}
         sv_sequences.update(this_record_dict)
 
     # Output

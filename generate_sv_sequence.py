@@ -184,9 +184,13 @@ def get_sv_sequence(pos_dict, reference, sequence_size):
         # For deletions the padding is just half of the final sequence length (no extra sequence is present)
         padding_size = sequence_size // 2
         endseq = reference[chr_start][pos_end:(pos_end + padding_size)].seq
-        # Generate N reference sequence
+        # Generate N reference sequence (ensure the resulting sequence does not go beyond the expected sequence size, this can happen if the deletion is very large)
+        # If the resulting sequence is going to be larger than desired, output only up to desired size limit 
         deletion_size = pos_end - pos_start
-        endseq_n = Seq('N' * deletion_size) + reference[chr_start][pos_end:(pos_end + (padding_size - deletion_size))].seq
+        if deletion_size > padding_size:
+            endseq_n = Seq('N' * padding_size)
+        else:
+            endseq_n = Seq('N' * deletion_size) + reference[chr_start][pos_end:(pos_end + (padding_size - deletion_size))].seq
 
     elif pos_dict['svtype'] == 'DUP':
         # Skip if duplicate is larger than target sequence size

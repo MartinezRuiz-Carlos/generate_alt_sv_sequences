@@ -101,7 +101,7 @@ def extract_sv_startend(record, caller):
             chr_end=record.contig
             endpos=record.pos + record.info['SVLEN']
         else:
-            svtype=bp_notations[record.info['BP_NOTATION']]
+            svtype=bp_notations[record.info['BP_NOTATION'][0]]
             # Extract end positions from mate
             chr_end,endpos=extract_chr_mate(record)
             altallele=record.alts

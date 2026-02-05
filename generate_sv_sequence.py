@@ -253,7 +253,7 @@ def get_sv_sequence(pos_dict, reference, sequence_size):
     return sv_seq,ref_seq,n_seq
 
 def main():
-    parser = argparse.ArgumentParser(description='Template Python3 Script')
+    parser = argparse.ArgumentParser(description='Script to call the sequence in the alternative allele of SVs in an input VCF')
     parser.add_argument('-i', '--input_vcf', help = 'Input structural variant VCF', required = True)
     parser.add_argument('-c', '--caller', help = 'Caller used for generating the VCF, one of sniffles, svim or savana', required = True)
     parser.add_argument('-r', '--reference', help = 'Reference genome used in SV calling, fasta format', required = True)

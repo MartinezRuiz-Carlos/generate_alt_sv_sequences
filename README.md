@@ -3,11 +3,11 @@
 Scripts to generate a csv with the alternative sequence of SVs provided in an input VCF. 
 These scripts can generate alternative SV sequences from the following callers:
 
-- (Sniffles)[https://github.com/fritzsedlazeck/Sniffles]
-- (Savana)[https://github.com/cortes-ciriano-lab/savana]
-- (SVim)[https://github.com/eldariont/svim]
+- [Sniffles](https://github.com/fritzsedlazeck/Sniffles)
+- [Savana](https://github.com/cortes-ciriano-lab/savana)
+- [SVim](https://github.com/eldariont/svim)
 
-NOTE, the script will only generate insert sequences for SVs called with Sniffles, a version for Savana is on the works using (consensus inserted sequences)[https://github.com/MartinezRuiz-Carlos/consensus_insert_sequence].
+NOTE, the script will only generate insert sequences for SVs called with Sniffles, a version for Savana is on the works using [consensus inserted sequences](https://github.com/MartinezRuiz-Carlos/consensus_insert_sequence).
 
 # How to run
 
